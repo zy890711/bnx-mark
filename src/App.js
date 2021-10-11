@@ -1,5 +1,5 @@
 import { Button, Table, Switch, Statistic } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import MagePng from "./img/role_Mage.png";
 import RangerPng from "./img/role_Ranger.png";
@@ -11,7 +11,7 @@ const AppFrame = styled.div`
   padding: 20px 50px;
   min-height: 100vh;
   @media (max-width: 768px) {
-    padding: 20px;
+    padding: 2px;
   }
 `;
 
@@ -61,13 +61,15 @@ const names = {
 };
 function App() {
   const [blocks, setBlocks] = useState([]);
-  const [stime, setStime] = useState(10);
+  const [stime, setStime] = useState(0.17);
   const [heges, setHeges] = useState([]);
   const [lowPrices, setLowPrices] = useState([]);
-  const [switchAuto, setSwitchAuto] = useState(false);
+  const [switchAuto, setSwitchAuto] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [deadline, setDeadline] = useState(0);
+  const [deadline, setDeadline] = useState(Date.now() + 0.17 * 1000 * 60);
+  const [autoLink, setAutoLick] = useState(true);
 
+  useEffect(() => checkBnxMark(), [])
   const checkBnxMark = () => {
     setLoading(true);
     fetch(URL)
@@ -88,6 +90,7 @@ function App() {
             return item.order_id != "48877";
           });
         setBlocks(hgs);
+
         let agilitys = filterHege(hgs, Robber, "agility", "strength");
         let strengths = filterHege(hgs, Ranger, "strength", "agility");
         let physiques = filterHege(hgs, Warrior, "strength", "physique");
@@ -96,6 +99,18 @@ function App() {
           ...new Set([...agilitys, ...strengths, ...physiques, ...brainss]),
         ];
         setHeges(hs);
+        // if (autoLink) {
+        //   if (hgs.length > 0) {
+        //     window.location.href = `https://${
+        //       isMobile() ? "m" : "www"
+        //     }.binaryx.pro/#/oneoffsale/detail/${hgs[0].order_id}`;
+        //   }
+        //   if (hs.length > 0) {
+        //     window.location.href = `https://${
+        //       isMobile() ? "m" : "www"
+        //     }.binaryx.pro/#/oneoffsale/detail/${hs[0].order_id}`;
+        //   }
+        // }
         const attrs = [90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100];
         const lowPrices = attrs.map((attr) => {
           return [
@@ -114,7 +129,6 @@ function App() {
             })
             .sort((a, b) => parseInt(a.price) - parseInt(b.price))[0];
         });
-
         setLowPrices(lowPrices);
         setLoading(false);
       })
@@ -191,7 +205,9 @@ function App() {
         return (
           <a
             target="_blank"
-            href={`https://www.binaryx.pro/#/oneoffsale/detail/${record.order_id}`}
+            href={`https://${
+              isMobile() ? "m" : "www"
+            }.binaryx.pro/#/oneoffsale/detail/${record.order_id}`}
           >
             详情页
           </a>
@@ -199,6 +215,13 @@ function App() {
       },
     },
   ];
+
+  const isMobile = () => {
+    const sUserAgent = navigator.userAgent;
+    return (
+      sUserAgent.indexOf("Android") > -1 || sUserAgent.indexOf("iPhone") > -1
+    );
+  };
 
   const setAutoLoading = (time) => {
     checkBnxMark();
@@ -212,12 +235,17 @@ function App() {
       setAutoLoading(stime);
     }
   };
+
+  const onChange1 = (checked) => {
+    setAutoLick(checked);
+  };
   return (
     <AppFrame>
       <Switch
         onChange={onChange}
         checkedChildren="开启自动刷新"
         unCheckedChildren="关闭自动刷新"
+        defaultChecked
       />
 
       <OptFrame>
@@ -270,14 +298,23 @@ function App() {
         {/* <InputNumber style={{height: '32px', height: 'auto'}} defaultValue={stime} disabled={!switchAuto} min={1} max={999} size='small' /> */}
       </OptFrame>
       {switchAuto ? (
-        <Countdown
-          title={`当前自动刷新周期${stime}分钟, 离下一次刷新还有`}
-          value={deadline}
-          format="mm分ss秒SSS毫秒"
-          onFinish={() => {
-            setAutoLoading(stime);
-          }}
-        />
+        <>
+          {/* <Switch
+            style={{ margin: "10px 0" }}
+            onChange={onChange1}
+            checkedChildren="低价卡自动打开网址"
+            unCheckedChildren="低价卡不自动打开网址"
+            defaultChecked
+          /> */}
+          <Countdown
+            title={`当前自动刷新中, 离下一次刷新还有`}
+            value={deadline}
+            format="mm分ss秒SSS毫秒"
+            onFinish={() => {
+              setAutoLoading(stime);
+            }}
+          />
+        </>
       ) : (
         ""
       )}
