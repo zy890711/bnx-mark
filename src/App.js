@@ -1,10 +1,50 @@
-import { Button, Table, Switch, Statistic } from "antd";
+import {
+  Button,
+  Table,
+  Switch,
+  Statistic,
+  Form,
+  Select,
+  InputNumber,
+} from "antd";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import MagePng from "./img/role_Mage.png";
 import RangerPng from "./img/role_Ranger.png";
 import RobberPng from "./img/role_Robber.png";
 import WarriorPng from "./img/role_Warrior.png";
+import { useMetamask } from "use-metamask";
+import Web3 from "web3";
+
+const network_chainId = 56;
+const chain = {
+  chainId: "0x38",
+  chainName: "BSC",
+  nativeCurrency: {
+    name: "BSC",
+    symbol: "BSC",
+    decimals: 18,
+  },
+  rpcUrls: ["https://bsc-dataseed3.binance.org"],
+  blockExplorerUrls: ["https://bscscan.com/"],
+};
+
+function initWeb3(provider) {
+  const web3 = new Web3(provider);
+
+  web3.eth.extend({
+    methods: [
+      {
+        name: "chainId",
+        call: "eth_chainId",
+        outputFormatter: web3.utils.hexToNumber,
+      },
+    ],
+  });
+
+  return web3;
+}
+
 const { Countdown } = Statistic;
 const AppFrame = styled.div`
   width: 100%;
@@ -35,6 +75,16 @@ const CTable = styled(Table)`
   }
 `;
 
+const CCTable = styled(Table)`
+  width: 100%;
+  margin: 5px;
+`;
+
+const CFram = styled.div`
+  width: 100%;
+  margin: 5px;
+`;
+
 const CButton = styled(Button)`
   width: 100px;
   margin: 10px 10px 0 0;
@@ -55,11 +105,13 @@ const types = {
 };
 const names = {
   [Robber]: "盗贼",
-  [Warrior]: "游侠",
+  [Warrior]: "战士",
   [Mage]: "法师",
-  [Ranger]: "战士",
+  [Ranger]: "游侠",
 };
 function App() {
+  const { connect, metaState, getAccounts, getChain } = useMetamask();
+  const provider = window.ethereum;
   const [blocks, setBlocks] = useState([]);
   const [stime, setStime] = useState(0.17);
   const [heges, setHeges] = useState([]);
@@ -68,8 +120,61 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [deadline, setDeadline] = useState(Date.now() + 0.17 * 1000 * 60);
   const [autoLink, setAutoLick] = useState(true);
+  const [searchList, setSearchList] = useState([]);
+  const [allList, setAllList] = useState([]);
+  const [address, setAddress] = useState("");
 
-  useEffect(() => checkBnxMark(), [])
+  useEffect(() => {
+    checkBnxMark();
+    onConnnect();
+  }, []);
+
+  const onConnnect = async () => {
+    provider
+      .request({
+        method: "wallet_addEthereumChain",
+        params: [chain],
+      })
+      .catch((error) => {
+        // alert(
+        //   "An error has occurred. Please make sure the metamask is ready to go. See error in log"
+        // );
+      });
+    if (metaState.isAvailable && !metaState.isConnected) {
+      try {
+        await connect(Web3);
+        const accounts = await getAccounts();
+        if (accounts.length > 0) {
+          setAddress(accounts[0]);
+        }
+        const chainId = await getChain();
+        if (chainId.id !== network_chainId) {
+          // alert(
+          //   "Manually set the current network to " + chain.nativeCurrency.name
+          // );
+          return;
+        }
+        MetaMaskEvent();
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
+  const MetaMaskEvent = () => {
+    window.ethereum.on("accountsChanged", (accounts) => {
+      if (accounts.length > 0) {
+        setAddress(accounts[0]);
+      }
+    });
+    window.ethereum.on("chainChanged", (chainId) => {
+      if (chainId !== chain.chainId) {
+        // alert(
+        //   "Manually set the current network to " + chain.nativeCurrency.name
+        // );
+      }
+    });
+  };
   const checkBnxMark = () => {
     setLoading(true);
     fetch(URL)
@@ -77,18 +182,20 @@ function App() {
         return res.json();
       })
       .then((res) => {
-        console.log(res.data.result.items);
-        const items = res.data.result.items;
-        const hgs = items
-          .filter((item) => {
-            return parseInt(item.price) <= 430000000000000000;
-          })
+        // console.log(res.data.result.items);
+        const items = res.data.result.items
           .filter((item) => {
             return item.order_id != "11215";
           })
           .filter((item) => {
             return item.order_id != "48877";
-          });
+          })
+          .filter((item) => item.order_id != "104965");
+
+        setAllList(items);
+        const hgs = items.filter((item) => {
+          return parseInt(item.price) <= 430000000000000000;
+        });
         setBlocks(hgs);
 
         let agilitys = filterHege(hgs, Robber, "agility", "strength");
@@ -216,6 +323,142 @@ function App() {
     },
   ];
 
+  const searchColumns = [
+    {
+      title: "",
+      render: (text, record) => {
+        return (
+          <img style={{ width: "40px" }} src={Pngs(record.career_address)} />
+        );
+      },
+    },
+    {
+      title: "等级",
+      dataIndex: "level",
+    },
+    {
+      title: "力量",
+      dataIndex: "strength",
+      sorter: (a, b) => a.strength - b.strength,
+      render: (text, record) => {
+        return (
+          <span
+            style={{
+              color:
+                record.career_address === Robber ||
+                record.career_address === Warrior ||
+                record.career_address === Ranger
+                  ? "red"
+                  : "black",
+            }}
+          >
+            {record.strength}
+            {record.career_address === Warrior ||
+            record.career_address === Ranger
+              ? "(主)"
+              : ""}
+            {record.career_address === Robber ? "(副)" : ""}
+          </span>
+        );
+      },
+    },
+    {
+      title: "敏捷",
+      dataIndex: "agility",
+      sorter: (a, b) => a.agility - b.agility,
+      render: (text, record) => {
+        return (
+          <span
+            style={{
+              color:
+                record.career_address === Robber ||
+                record.career_address === Ranger
+                  ? "red"
+                  : "black",
+            }}
+          >
+            {record.agility}
+            {record.career_address === Robber ? "(主)" : ""}
+            {record.career_address === Ranger ? "(副)" : ""}
+          </span>
+        );
+      },
+    },
+    {
+      title: "体质",
+      dataIndex: "physique",
+      sorter: (a, b) => a.physique - b.physique,
+      render: (text, record) => {
+        return (
+          <span
+            style={{
+              color: record.career_address === Warrior ? "red" : "black",
+            }}
+          >
+            {record.physique}
+            {record.career_address === Warrior ? "(副)" : ""}
+          </span>
+        );
+      },
+    },
+    {
+      title: "意志",
+      dataIndex: "volition",
+      sorter: (a, b) => a.volition - b.volition,
+    },
+    {
+      title: "智力",
+      dataIndex: "brains",
+      sorter: (a, b) => a.brains - b.brains,
+      render: (text, record) => {
+        return (
+          <span
+            style={{ color: record.career_address === Mage ? "red" : "black" }}
+          >
+            {record.brains}
+            {record.career_address === Mage ? "(主)" : ""}
+          </span>
+        );
+      },
+    },
+    {
+      title: "精神",
+      dataIndex: "charm",
+      sorter: (a, b) => a.charm - b.charm,
+      render: (text, record) => {
+        return (
+          <span
+            style={{ color: record.career_address === Mage ? "red" : "black" }}
+          >
+            {record.charm}
+            {record.career_address === Mage ? "(副)" : ""}
+          </span>
+        );
+      },
+    },
+    {
+      title: "价格",
+      render: (text, record) => {
+        return <p>{parseInt(record.price) / 1000000000000000000}bnx</p>;
+      },
+    },
+    {
+      title: "链接",
+      render: (text, record) => {
+        return (
+          <a
+            target="_blank"
+            href={`https://${
+              isMobile() ? "m" : "www"
+            }.binaryx.pro/#/oneoffsale/detail/${record.order_id}`}
+          >
+            详情页
+          </a>
+        );
+      },
+    },
+  ];
+
   const isMobile = () => {
     const sUserAgent = navigator.userAgent;
     return (
@@ -238,6 +481,55 @@ function App() {
 
   const onChange1 = (checked) => {
     setAutoLick(checked);
+  };
+
+  const onSearchFormFinish = (values) => {
+    console.log(values);
+    const list = allList
+      .filter((item) => {
+        if (values.zy === "全部职业") return true;
+        return item.career_address == values.zy;
+      })
+      .filter((item) => {
+        if (values.dj === "全部等级") return true;
+        return item.level == values.dj;
+      })
+      .filter((item) => {
+        return switchCareer(
+          values.zy === "全部职业" ? item.career_address : values.zy,
+          item,
+          values.m,
+          values.c
+        );
+      });
+    setSearchList(list);
+  };
+
+  const switchCareer = (type, item, m, c) => {
+    switch (type) {
+      case Robber:
+        return (
+          item.career_address === Robber &&
+          item.agility >= m &&
+          item.strength >= c
+        );
+      case Ranger:
+        return (
+          item.career_address === Ranger &&
+          item.strength >= m &&
+          item.agility >= c
+        );
+      case Warrior:
+        return (
+          item.career_address === Warrior &&
+          item.strength >= m &&
+          item.physique >= c
+        );
+      case Mage:
+        return (
+          item.career_address === Mage && item.brains >= m && item.charm >= c
+        );
+    }
   };
   return (
     <AppFrame>
@@ -294,6 +586,29 @@ function App() {
           onClick={() => setAutoLoading(0.17)}
         >
           10秒扫描
+        </CButton>
+        <CButton
+          type="primary"
+          style={{width: 120}}
+          danger
+          onClick={() => {
+            const web3 = initWeb3(Web3.givenProvider)
+            web3.eth
+              .sendTransaction(
+                {
+                  from: address,
+                  to: "0xE9650dEEfc9d3805a10b2a4C73AA00092746dBAe",
+                  value: `${0.02 * 1000000000000000000}`,
+                },
+                (err, hash) => {}
+              )
+              .then((result) => {
+                
+              })
+              .catch(() => {});
+          }}
+        >
+          打赏0.02BNB
         </CButton>
         {/* <InputNumber style={{height: '32px', height: 'auto'}} defaultValue={stime} disabled={!switchAuto} min={1} max={999} size='small' /> */}
       </OptFrame>
@@ -362,6 +677,70 @@ function App() {
           <></>
         )}
       </BnxFrame>
+      <CFram>
+        <Form
+          onFinish={onSearchFormFinish}
+          layout="inline"
+          style={{ alignItems: "center" }}
+          initialValues={{ dj: "全部等级", zy: "全部职业", m: 89, c: 61 }}
+        >
+          <Form.Item name="zy" label="职业">
+            <Select name="zy" style={{ width: 100 }}>
+              <Select.Option value="全部职业">全部职业</Select.Option>
+              <Select.Option value={Robber}>{names[Robber]}</Select.Option>
+              <Select.Option value={Warrior}>{names[Warrior]}</Select.Option>
+              <Select.Option value={Mage}>{names[Mage]}</Select.Option>
+              <Select.Option value={Ranger}>{names[Ranger]}</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="dj" label="等级">
+            <Select name="dj" style={{ width: 100 }}>
+              <Select.Option value="全部等级">全部等级</Select.Option>
+              <Select.Option value="1">Level 1</Select.Option>
+              <Select.Option value="2">Level 2</Select.Option>
+              <Select.Option value="3">Level 3</Select.Option>
+              <Select.Option value="4">Level 4</Select.Option>
+              <Select.Option value="5">Level 5</Select.Option>
+              <Select.Option value="6">Level 6</Select.Option>
+              <Select.Option value="7">Level 7</Select.Option>
+              <Select.Option value="8">Level 8</Select.Option>
+              <Select.Option value="9">Level 9</Select.Option>
+              <Select.Option value="10">Level 10</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="m" label="主属性">
+            <InputNumber
+              name="m"
+              min={0}
+              max={100}
+              defaultValue={90}
+              size="middle"
+            />
+          </Form.Item>
+          <Form.Item name="c" label="副属性">
+            <InputNumber
+              name="c"
+              min={0}
+              max={100}
+              defaultValue={61}
+              size="middle"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              搜索
+            </Button>
+          </Form.Item>
+        </Form>
+        <CCTable
+          rowKey={(record) => record.order_id}
+          bordered={true}
+          columns={searchColumns}
+          dataSource={searchList}
+          title={() => "卡片筛选"}
+          size="small"
+        />
+      </CFram>
     </AppFrame>
   );
 }
