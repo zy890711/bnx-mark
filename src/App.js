@@ -15,6 +15,7 @@ import RobberPng from "./img/role_Robber.png";
 import WarriorPng from "./img/role_Warrior.png";
 import { useMetamask } from "use-metamask";
 import Web3 from "web3";
+import NewApp from "./NewApp";
 
 const network_chainId = 56;
 const chain = {
@@ -109,6 +110,36 @@ const names = {
   [Mage]: "法师",
   [Ranger]: "游侠",
 };
+
+const a = {
+  PlayInfoAddress: '0x210d87BA2990082FF22eA15396303382B1FaEA56',
+  NewPlayInfoAddress: '0x210d87BA2990082FF22eA15396303382B1FaEA56',
+  MiningAddress: '0xe278BDF4541cc309b379F9A4E867F60fD6B7BC59',
+  NewMiningAddress: '0x698E165F2897e4daC68671c4cDFf337bbC543767',
+  BscAddress: '0x8C851d1a123Ff703BD1f9dabe631b69902Df5f97',
+  NewtokenAddress: '0xb3a6381070B1a15169DEA646166EC0699fDAeA79',
+  WarriorAddress: '0x22F3E436dF132791140571FC985Eb17Ab1846494',
+  RobberAddress: '0xaF9A274c9668d68322B0dcD9043D79Cd1eBd41b3',
+  MageAddress: '0xC6dB06fF6e97a6Dc4304f7615CdD392a9cF13F44',
+  RangerAddress: '0xF31913a9C8EFE7cE7F08A1c08757C166b572a937',
+  DatieAddress: '0x4713A70db9AD47780EFC3300c08C17c4013DCa57',
+  BulieAddress: '0x8B2DF673a3313BB3c0A03A154D9fFECbB2cCF26F',
+  TushuAddress: '0x0594522127B6276C001554C15b900166BD98eC0E',
+  LinggongAddress: '0xfA65a5751ef6079C1022Aa10b9163d7A2281360A',
+  blacksmithAddress: '0x3a4D27B77B253bdb9AFec082D8f5cDE5A4D713E1',
+  hunterAddress: '0x480d503B12ae928e8DcCd820CE45B2f6F39Ad598',
+  bookmangerAddress: '0x21D4Da5833d93944B8340788C6b463ED8420838B',
+  RangeworkAddress: '0x81E9aCe9511A7d56fd31940d1C49425CA3a2B8f8',
+  GaojiAddress: '0xC5dDbb4ac27A939D914059A023C6A35F377B67Ff',
+  SixthAddress: '0xdcC5C1e7A3ADC8b7635565183a7385026502440B',
+  SeventhAddress: '0x0ac4eB7978E0dA0d53824bd590354C8Bd264C4e6',
+  poolAddress: '0xB84A69Ef7c5c823707b2Ba7bc23faA40f33242d1',
+  poolV2Address: '0x8dFe5535576C720896E98b9c9DBAf81eE03eA903',
+  routerpath: '0xA92FE30CBB04fB647068e13208F5Ecd4EA52FF8d',
+  USDTAddress: '0x55d398326f99059fF775485246999027B3197955',
+  gameManager: '0xA100C0f774Ed525C186e6BeCDa88812427e1742d',
+  FeeAddress: '0x092092Ec06C5D06775249c689AaD880336dD5c8e'
+};
 function App() {
   const { connect, metaState, getAccounts, getChain } = useMetamask();
   const provider = window.ethereum;
@@ -128,6 +159,7 @@ function App() {
     checkBnxMark();
     onConnnect();
   }, []);
+
 
   const onConnnect = async () => {
     provider
@@ -194,7 +226,7 @@ function App() {
 
         setAllList(items);
         const hgs = items.filter((item) => {
-          return parseInt(item.price) <= 430000000000000000;
+          return parseInt(item.price) <= 450000000000000000;
         });
         setBlocks(hgs);
 
@@ -741,6 +773,7 @@ function App() {
           size="small"
         />
       </CFram>
+      <NewApp />
     </AppFrame>
   );
 }
