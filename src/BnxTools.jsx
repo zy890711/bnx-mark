@@ -131,7 +131,7 @@ const BnxToolFrame = styled.div`
 `;
 
 const Header = styled.header`
-  width: 100%;
+  width: 100vw;
   padding: 10px 20px;
   box-shadow: 0 1px 5px 5px #efefef;
   display: flex;
@@ -143,10 +143,11 @@ const Header = styled.header`
   z-index: 99;
 `;
 
-const HeaderTools = styled.header`
+const HeaderTools = styled.div`
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
 `;
 
 const HeaderTitle = styled.span`
@@ -181,10 +182,7 @@ const TableFrame = styled.div`
 const CTable = styled(Table)`
   width: 950px;
   @media (max-width: 768px) {
-    width: 700px;
-  }
-  @media (max-width: 440px) {
-    width: 440px;
+    width: 100%;
   }
 `;
 
@@ -397,6 +395,69 @@ const baseColumns = [
   },
 ];
 
+const baseMobileColumns = [
+  {
+    title: "角色",
+    dataIndex: "js",
+    width: 60,
+    render: (text, record) => {
+      return <p>{names[record.career_address]}</p>;
+    },
+  },
+  {
+    title: "等级",
+    dataIndex: "level",
+    width: 60,
+    sorter: (a, b) => a.level - b.level,
+  },
+  {
+    title: "主属性",
+    dataIndex: "m1",
+    width: 70,
+    render: (text, record) => {
+      let value = 0;
+      switch (record.career_address) {
+        case Robber:
+          value = record.agility;
+          break;
+        case Warrior:
+          value = record.agility;
+          break;
+        case Mage:
+          value = record.brains;
+          break;
+        case Ranger:
+          value = record.strength;
+          break;
+      }
+      return <p>{value}</p>;
+    },
+  },
+  {
+    title: "副属性",
+    dataIndex: "m2",
+    width: 70,
+    render: (text, record) => {
+      let value = 0;
+      switch (record.career_address) {
+        case Robber:
+          value = record.strength;
+          break;
+        case Warrior:
+          value = record.physique;
+          break;
+        case Mage:
+          value = record.charm;
+          break;
+        case Ranger:
+          value = record.agility;
+          break;
+      }
+      return <p>{value}</p>;
+    },
+  },
+];
+
 const markColumn = [
   {
     title: "价格",
@@ -463,7 +524,9 @@ const HegeColumn = [
       }
       return (
         <>
-          <Tag color={hege ? "green" : "black"}>{hege ? "合格" : "黑奴"}</Tag>
+          <Tag color={hege ? "green" : "black"}>
+            {hege ? (isMobile() ? "🈴️" : "合格") : isMobile() ? "黑" : "黑奴"}
+          </Tag>
         </>
       );
     },
@@ -1117,34 +1180,36 @@ const BnxTools = () => {
       <Header>
         <HeaderTools>
           <img src={faviconPng} />
-          <HeaderTitle>Tools</HeaderTitle>
-          <CButton
-            type="primary"
-            style={{ width: 100, padding: 0 }}
-            danger
-            onClick={ds(0.02)}
-          >
-            打赏0.02BNB
-          </CButton>
-          <CButton
-            type="primary"
-            style={{ width: 100, padding: 0 }}
-            danger
-            onClick={ds(0.04)}
-          >
-            打赏0.04BNB
-          </CButton>
-          <CButton
-            type="primary"
-            style={{ width: 100, padding: 0 }}
-            danger
-            onClick={ds(0.05)}
-          >
-            打赏0.05BNB
-          </CButton>
+          <HeaderTitle>BinaryX Tools</HeaderTitle>
+          <Buttons>
+            <CButton
+              type="primary"
+              style={{ width: 100, padding: 0 }}
+              danger
+              onClick={ds(0.02)}
+            >
+              打赏0.02BNB
+            </CButton>
+            <CButton
+              type="primary"
+              style={{ width: 100, padding: 0 }}
+              danger
+              onClick={ds(0.04)}
+            >
+              打赏0.04BNB
+            </CButton>
+            <CButton
+              type="primary"
+              style={{ width: 100, padding: 0 }}
+              danger
+              onClick={ds(0.08)}
+            >
+              打赏0.08BNB
+            </CButton>
+          </Buttons>
         </HeaderTools>
         {
-          "祝各位老板发大财, 天天都是400+, 赚钱了记得支持一下小弟, 这是小弟的地址: 0x3B0D325D60b288139535e8Ee772d9e22E140444F"
+          //   "祝各位老板发大财, 天天都是400+, 赚钱了记得支持一下小弟, 这是小弟的地址: 0x3B0D325D60b288139535e8Ee772d9e22E140444F"
         }
       </Header>
       <Main>
@@ -1269,7 +1334,11 @@ const BnxTools = () => {
             }}
             bordered={false}
             pagination={false}
-            columns={[...addIdColumn, ...HegeColumn, ...baseColumns]}
+            columns={[
+              ...(isMobile() ? [] : addIdColumn),
+              ...HegeColumn,
+              ...(isMobile() ? baseMobileColumns : baseColumns),
+            ]}
             dataSource={myHeroList}
             size="small"
           />
@@ -1331,9 +1400,9 @@ const BnxTools = () => {
             }}
             bordered={false}
             columns={[
-              ...addIdColumn,
+              ...(isMobile() ? [] : addIdColumn),
               ...HegeColumn,
-              ...baseColumns,
+              ...(isMobile() ? baseMobileColumns : baseColumns),
               ...workColumn,
             ]}
             dataSource={gongzuoList}
@@ -1342,33 +1411,15 @@ const BnxTools = () => {
         </TableFrame>
         <TableFrame>
           <TableHeader>
-            <h3 id="menu4">合格卡地板价</h3>
-          </TableHeader>
-
-          <CTable
-            loading={allLoad}
-            rowKey={(record) => record.order_id}
-            bordered={false}
-            columns={[
-              ...addIdColumn,
-              ...baseColumns,
-              ...markColumn,
-              ...urlColumn,
-            ]}
-            pagination={false}
-            dataSource={lowPrices}
-            size="small"
-          />
-        </TableFrame>
-        <TableFrame>
-          <TableHeader>
             <h3 id="menu5">卡片刷选</h3>
-            <Switch
-              onChange={onChange}
-              checkedChildren="简洁搜索"
-              unCheckedChildren="简洁搜索"
-              style={{ margin: 10 }}
-            />
+           {
+               isMobile() ? <></> : <Switch
+               onChange={onChange}
+               checkedChildren="简洁搜索"
+               unCheckedChildren="简洁搜索"
+               style={{ margin: 10 }}
+             /> 
+           }
             <Form
               onFinish={onSearchFormFinish}
               layout="inline"
@@ -1385,7 +1436,7 @@ const BnxTools = () => {
               }}
             >
               <Form.Item name="zy" label="职业">
-                <Select name="zy" style={{ width: 100 }} style={{ width: 65 }}>
+                <Select name="zy" style={{ width: 100 }} style={{ width: 75 }}>
                   <Select.Option value="全部职业">职业</Select.Option>
                   <Select.Option value={Robber}>{names[Robber]}</Select.Option>
                   <Select.Option value={Warrior}>
@@ -1396,7 +1447,7 @@ const BnxTools = () => {
                 </Select>
               </Form.Item>
               <Form.Item name="dj" label="等级">
-                <Select name="dj" style={{ width: 100 }} style={{ width: 65 }}>
+                <Select name="dj" style={{ width: 100 }} style={{ width: 75 }}>
                   <Select.Option value="全部等级">等级</Select.Option>
                   <Select.Option value="1">L1</Select.Option>
                   <Select.Option value="2">L2</Select.Option>
@@ -1410,13 +1461,25 @@ const BnxTools = () => {
                   <Select.Option value="10">L10</Select.Option>
                 </Select>
               </Form.Item>
-              {simple ? (
+              {simple || isMobile() ? (
                 <>
-                  <Form.Item name="m" label="主属性">
-                    <InputNumber name="m" min={0} max={100} size="middle" />
+                  <Form.Item name="m" label="主属性" style={{ width: 60 }}>
+                    <InputNumber
+                      name="m"
+                      min={0}
+                      max={100}
+                      size="middle"
+                      style={{ width: 60 }}
+                    />
                   </Form.Item>
                   <Form.Item name="c" label="附属性">
-                    <InputNumber name="c" min={0} max={100} size="middle" />
+                    <InputNumber
+                      name="c"
+                      min={0}
+                      max={100}
+                      size="middle"
+                      style={{ width: 60 }}
+                    />
                   </Form.Item>
                 </>
               ) : (
@@ -1490,8 +1553,8 @@ const BnxTools = () => {
             rowKey={(record) => record.order_id}
             bordered={false}
             columns={[
-              ...addIdColumn,
-              ...baseColumns,
+              ...(isMobile() ? [] : addIdColumn),
+              ...(isMobile() ? baseMobileColumns : baseColumns),
               ...markColumn,
               ...urlColumn,
             ]}
@@ -1541,8 +1604,8 @@ const BnxTools = () => {
             bordered={false}
             loading={allLoad}
             columns={[
-              ...addIdColumn,
-              ...baseColumns,
+              ...(isMobile() ? [] : addIdColumn),
+              ...(isMobile() ? baseMobileColumns : baseColumns),
               ...markColumn,
               ...urlColumn,
             ]}
@@ -1551,11 +1614,32 @@ const BnxTools = () => {
             size="small"
           />
         </TableFrame>
+        <TableFrame>
+          <TableHeader>
+            <h3 id="menu4">合格卡地板价</h3>
+          </TableHeader>
+
+          <CTable
+            loading={allLoad}
+            rowKey={(record) => record.order_id}
+            bordered={false}
+            columns={[
+              ...(isMobile() ? [] : addIdColumn),
+              ...(isMobile() ? baseMobileColumns : baseColumns),
+              ...markColumn,
+              ...urlColumn,
+            ]}
+            pagination={false}
+            dataSource={lowPrices}
+            size="small"
+          />
+        </TableFrame>
       </Main>
       <Anchor
         targetOffset={100}
         style={{
           position: "fixed",
+          visibility: isMobile() ? "hidden" : "visible",
           zIndex: 100,
           top: 0,
           left: 10,
