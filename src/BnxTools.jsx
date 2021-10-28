@@ -14,6 +14,8 @@ import {
   Input,
   Popconfirm,
   Anchor,
+  Space,
+  BackTop,
 } from "antd";
 import { useEffect, useState } from "react";
 import { useMetamask } from "use-metamask";
@@ -97,6 +99,39 @@ const gongzuo_type_zh = (type) => {
     case gongzuo_type8:
       return "顾问";
   }
+};
+
+const prices = {
+  86: 423,
+  87: 576,
+  88: 720,
+  89: 864,
+  90: 1008,
+  91: 1152,
+  92: 1296,
+  93: 1440,
+  94: 1584,
+  95: 1728,
+  96: 1872,
+  97: 2016,
+  98: 2160,
+  99: 2304,
+  99: 2448,
+};
+
+const multiples = {
+  1: 1,
+  2: 2,
+  3: 4,
+  4: 8,
+  5: 16,
+  6: 25,
+  7: 50,
+  8: 75,
+  9: 100,
+  10: 200,
+  11: 300,
+  12: 500,
 };
 
 const Addresss = {
@@ -421,7 +456,7 @@ const baseMobileColumns = [
           value = record.agility;
           break;
         case Warrior:
-          value = record.agility;
+          value = record.strength;
           break;
         case Mage:
           value = record.brains;
@@ -462,7 +497,6 @@ const markColumn = [
   {
     title: "价格",
     sorter: (a, b) => a.price - b.price,
-    defaultSortOrder: "ascend",
     render: (text, record) => {
       return <p>{parseInt(record.price) / 1000000000000000000}bnx</p>;
     },
@@ -555,6 +589,7 @@ const BnxTools = () => {
   const [heroLoad, setHeroLoad] = useState(false);
   const [workLoad, setWorkLoad] = useState(false);
   const [goldTotal, setGoldTotal] = useState(0);
+  const [budgetGoldTotal, setBudgetGoldTotal] = useState(0);
   const [simple, setSimple] = useState(false);
   const [allLoad, setAllLoad] = useState(false);
   const [transferAddress, setTransferAddress] = useState("");
@@ -579,7 +614,8 @@ const BnxTools = () => {
           const addr = accounts[0];
           setAddress(addr);
           initContract();
-          getMyHero(addr);
+
+          ƒHero(addr);
           getWordCards(addr);
         }
         const chainId = await getChain();
@@ -665,6 +701,9 @@ const BnxTools = () => {
     ];
     setWorkLoad(true);
     setGongZuoList([]);
+    setBudgetGoldTotal(0);
+    setGoldTotal(0);
+    setMyWorkCardSelectedList([]);
 
     const allFetchPromises = types.map((item) => {
       return new Promise((resolve) => {
@@ -762,6 +801,45 @@ const BnxTools = () => {
         const total = res.reduce((pre, item) => {
           return Number(pre) + Number(item.gold);
         }, 0);
+        const hgtotal = res.reduce((pre, item) => {
+          let hege = false;
+          switch (item.career_address) {
+            case Robber:
+              hege = filterHegeOne(item, Robber, "agility", "strength");
+              break;
+            case Ranger:
+              hege = filterHegeOne(item, Ranger, "strength", "agility");
+              break;
+            case Warrior:
+              hege = filterHegeOne(item, Warrior, "strength", "physique");
+              break;
+            case Mage:
+              hege = filterHegeOne(item, Mage, "brains", "charm");
+              break;
+          }
+          if (hege && item.level >= 2) {
+            let value = 0;
+            switch (item.career_address) {
+              case Robber:
+                value = item.agility;
+                break;
+              case Ranger:
+                value = item.strength;
+                break;
+              case Warrior:
+                value = item.strength;
+                break;
+              case Mage:
+                value = item.brains;
+                break;
+            }
+            const mainValue =
+              Number(prices[value]) * Number(multiples[item.level]);
+            return pre + mainValue;
+          }
+          return pre + 288;
+        }, 0);
+        setBudgetGoldTotal(hgtotal);
         setGoldTotal(total);
       });
     });
@@ -778,7 +856,7 @@ const BnxTools = () => {
       .send({
         from: address,
       })
-      .then(() => getMyHero(address));
+      .then(() => ƒHero(address));
   };
 
   const getFiveCard = () => {
@@ -793,11 +871,11 @@ const BnxTools = () => {
         .send({
           from: address,
         })
-        .then(() => getMyHero(address));
+        .then(() => ƒHero(address));
     }
   };
 
-  const getMyHero = async (address) => {
+  const ƒHero = async (address) => {
     if (!address) {
       message.error("请重新刷新网页");
       return;
@@ -1000,7 +1078,7 @@ const BnxTools = () => {
         .send({
           from: address,
         })
-        .then(() => getMyHero(address));
+        .then(() => ƒHero(address));
     });
   };
 
@@ -1039,7 +1117,7 @@ const BnxTools = () => {
         .send({
           from: address,
         })
-        .then(() => getMyHero(address));
+        .then(() => ƒHero(address));
     });
   };
 
@@ -1071,7 +1149,7 @@ const BnxTools = () => {
         .send({
           from: address,
         })
-        .then(() => getMyHero(address));
+        .then(() => ƒHero(address));
     });
   };
   const ds = (number) => {
@@ -1116,26 +1194,56 @@ const BnxTools = () => {
     };
   };
 
-  const getGold = (all) => {
+  const getGold = (all, type = 0) => {
     return () => {
       if (!address) {
         message.error("请重新刷新网页");
         return;
       }
       initContract();
-      (all ? gongzuoList : myWorkCardSelectedList).forEach((item) => {
-        if (item.workname === "兼职") {
-          contracts.MiningContract.methods
-            .getAward(item.token_id)
-            .send({ from: address })
-            .then(() => getWordCards(address));
-        } else {
-          contracts.NewMiningContract.methods
-            .getAward(item.token_id)
-            .send({ from: address })
-            .then(() => getWordCards(address));
+      if (type === 1) {
+        const a = gongzuoList.filter((item) => item.workname !== "兼职");
+        if (a.length === 0) {
+          message.error("你没有黑奴可收");
+          return;
         }
-      });
+        a.forEach((item) => {
+          if (item.workname === "兼职") {
+            contracts.MiningContract.methods
+              .getAward(item.token_id)
+              .send({ from: address })
+              .then(() => getWordCards(address));
+          }
+        });
+      } else if (type === 2) {
+        const x = gongzuoList.filter((item) => item.workname !== "兼职");
+        if (x.length === 0) {
+          message.error("你没有合格可收");
+          return;
+        }
+        x.forEach((item) => {
+          if (item.workname !== "兼职") {
+            contracts.NewMiningContract.methods
+              .getAward(item.token_id)
+              .send({ from: address })
+              .then(() => getWordCards(address));
+          }
+        });
+      } else {
+        (all ? gongzuoList : myWorkCardSelectedList).forEach((item) => {
+          if (item.workname === "兼职") {
+            contracts.MiningContract.methods
+              .getAward(item.token_id)
+              .send({ from: address })
+              .then(() => getWordCards(address));
+          } else {
+            contracts.NewMiningContract.methods
+              .getAward(item.token_id)
+              .send({ from: address })
+              .then(() => getWordCards(address));
+          }
+        });
+      }
     };
   };
 
@@ -1180,7 +1288,7 @@ const BnxTools = () => {
       <Header>
         <HeaderTools>
           <img src={faviconPng} />
-          <HeaderTitle>BinaryX Tools</HeaderTitle>
+          <HeaderTitle>大鸟工具</HeaderTitle>
           <Buttons>
             <CButton
               type="primary"
@@ -1220,16 +1328,16 @@ const BnxTools = () => {
         />
         <TableFrame>
           <TableHeader>
-            <h3 id="menu1">角色抽卡</h3>
+            <h3 id="menu1">当前钱包</h3>
             {address}
-            <Buttons>
+            {/* <Buttons>
               <CButton type="primary" size="middle" onClick={getOneCard}>
                 抽一次
               </CButton>
               <CButton type="primary" size="middle" onClick={getFiveCard}>
                 抽五次
               </CButton>
-            </Buttons>
+            </Buttons> */}
           </TableHeader>
         </TableFrame>
         <TableFrame>
@@ -1281,13 +1389,16 @@ const BnxTools = () => {
               <CButton
                 type="primary"
                 size="middle"
-                onClick={() => getMyHero(address)}
+                onClick={() => ƒHero(address)}
               >
                 刷新
               </CButton>
             </Buttons>
             {myCardSelectedList.length > 0 ? (
-              <p>已选中: {myCardSelectedList.length}</p>
+              <Buttons>
+                <p>已选中: {myCardSelectedList.length}</p>
+                <Button type="text" onClick={() => setMyCardSelectedList([])}>清除选中</Button>
+              </Buttons>
             ) : (
               <></>
             )}
@@ -1363,8 +1474,14 @@ const BnxTools = () => {
               >
                 退出工作
               </CButton>
+              <CButton type="primary" size="middle" onClick={getGold(true, 1)}>
+                收全黑菜
+              </CButton>
+              <CButton type="primary" size="middle" onClick={getGold(true, 2)}>
+                收全合格菜
+              </CButton>
               <CButton type="primary" size="middle" onClick={getGold(true)}>
-                全部收菜
+                收全部菜
               </CButton>
               <CButton type="primary" size="middle" onClick={quitWork(true)}>
                 全部退出工作
@@ -1378,14 +1495,18 @@ const BnxTools = () => {
               </CButton>
             </Buttons>
             {myWorkCardSelectedList.length > 0 ? (
-              <p>已选中: {myWorkCardSelectedList.length}</p>
+              <Buttons>
+                <p>已选中: {myWorkCardSelectedList.length}</p>
+                <Button type="link" onClick={() => setMyWorkCardSelectedList([])}>清除选中</Button>
+              </Buttons>
             ) : (
               <></>
             )}
-            <p>
-              挖矿卡片数量: {gongzuoList.length} 挖矿总收益:{" "}
-              {goldTotal.toFixed(2)}
-            </p>
+            <Space>
+              <p>挖矿卡片数量:{gongzuoList.length}</p>
+              <p>每日预计收益:{budgetGoldTotal}</p>
+              <p>挖矿总收益: {goldTotal.toFixed(2)}</p>
+            </Space>
           </TableHeader>
 
           <CTable
@@ -1411,15 +1532,17 @@ const BnxTools = () => {
         </TableFrame>
         <TableFrame>
           <TableHeader>
-            <h3 id="menu5">卡片刷选</h3>
-           {
-               isMobile() ? <></> : <Switch
-               onChange={onChange}
-               checkedChildren="简洁搜索"
-               unCheckedChildren="简洁搜索"
-               style={{ margin: 10 }}
-             /> 
-           }
+            <h3 id="menu4">卡片筛选</h3>
+            {isMobile() ? (
+              <></>
+            ) : (
+              <Switch
+                onChange={onChange}
+                checkedChildren="简洁搜索"
+                unCheckedChildren="简洁搜索"
+                style={{ margin: 10 }}
+              />
+            )}
             <Form
               onFinish={onSearchFormFinish}
               layout="inline"
@@ -1463,7 +1586,7 @@ const BnxTools = () => {
               </Form.Item>
               {simple || isMobile() ? (
                 <>
-                  <Form.Item name="m" label="主属性" style={{ width: 60 }}>
+                  <Form.Item name="m" label="主属性">
                     <InputNumber
                       name="m"
                       min={0}
@@ -1549,7 +1672,7 @@ const BnxTools = () => {
           </TableHeader>
 
           <CTable
-            loading={load || allLoad}
+            // loading={load || allLoad}
             rowKey={(record) => record.order_id}
             bordered={false}
             columns={[
@@ -1564,7 +1687,7 @@ const BnxTools = () => {
         </TableFrame>
         <TableFrame>
           <TableHeader>
-            <h3 id="menu6">捡漏区域</h3>
+            <h3 id="menu5">捡漏区域</h3>
             <p>价格低于0.44bnx的黑卡</p>
             <Buttons>
               <CButton type="primary" onClick={checkBnxMark}>
@@ -1616,11 +1739,11 @@ const BnxTools = () => {
         </TableFrame>
         <TableFrame>
           <TableHeader>
-            <h3 id="menu4">合格卡地板价</h3>
+            <h3 id="menu6">合格卡地板价</h3>
           </TableHeader>
 
           <CTable
-            loading={allLoad}
+            // loading={allLoad}
             rowKey={(record) => record.order_id}
             bordered={false}
             columns={[
@@ -1646,13 +1769,14 @@ const BnxTools = () => {
           marginTop: 100,
         }}
       >
-        <Link href="#menu1" title="角色抽卡" />
+        <Link href="#menu1" title="当前钱包" />
         <Link href="#menu2" title="我的英雄" />
         <Link href="#menu3" title="日常挖矿" />
-        <Link href="#menu4" title="合格卡地板价" />
-        <Link href="#menu5" title="卡片筛选" />
-        <Link href="#menu6" title="捡漏" />
+        <Link href="#menu4" title="卡片筛选" />
+        <Link href="#menu5" title="捡漏" />
+        <Link href="#menu6" title="合格卡地板价" />
       </Anchor>
+      <BackTop />
     </BnxToolFrame>
   );
 };
