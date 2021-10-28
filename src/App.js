@@ -91,7 +91,7 @@ const CButton = styled(Button)`
   margin: 10px 10px 0 0;
 `;
 const URL =
-  "https://www.binaryx.pro/getSales?page=1&page_size=99999&status=selling&name=&sort=price&direction=asc&career=&value_attr=&start_value=&end_value=&pay_addr=";
+  "https://market.binaryx.pro/getSales?page=1&page_size=99999&status=selling&name=&sort=time&direction=desc&career=&value_attr=&start_value=&end_value=&pay_addr=";
 const Robber = "0xaF9A274c9668d68322B0dcD9043D79Cd1eBd41b3";
 const Warrior = "0x22F3E436dF132791140571FC985Eb17Ab1846494";
 const Mage = "0xC6dB06fF6e97a6Dc4304f7615CdD392a9cF13F44";
@@ -214,7 +214,6 @@ function App() {
         return res.json();
       })
       .then((res) => {
-        // console.log(res.data.result.items);
         const items = res.data.result.items
           .filter((item) => {
             return item.order_id != "11215";
@@ -238,19 +237,7 @@ function App() {
           ...new Set([...agilitys, ...strengths, ...physiques, ...brainss]),
         ];
         setHeges(hs);
-        // if (autoLink) {
-        //   if (hgs.length > 0) {
-        //     window.location.href = `https://${
-        //       isMobile() ? "m" : "www"
-        //     }.binaryx.pro/#/oneoffsale/detail/${hgs[0].order_id}`;
-        //   }
-        //   if (hs.length > 0) {
-        //     window.location.href = `https://${
-        //       isMobile() ? "m" : "www"
-        //     }.binaryx.pro/#/oneoffsale/detail/${hs[0].order_id}`;
-        //   }
-        // }
-        const attrs = [90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100];
+        const attrs = [86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100];
         const lowPrices = attrs.map((attr) => {
           return [
             ...filterHege(items, Robber, "agility", "strength", attr),
@@ -345,7 +332,7 @@ function App() {
           <a
             target="_blank"
             href={`https://${
-              isMobile() ? "m" : "www"
+              isMobile() ? "m" : "market"
             }.binaryx.pro/#/oneoffsale/detail/${record.order_id}`}
           >
             详情页
@@ -470,6 +457,8 @@ function App() {
     },
     {
       title: "价格",
+      sorter: (a, b) => a.price - b.price,
+      defaultSortOrder: 'ascend',
       render: (text, record) => {
         return <p>{parseInt(record.price) / 1000000000000000000}bnx</p>;
       },
@@ -481,7 +470,7 @@ function App() {
           <a
             target="_blank"
             href={`https://${
-              isMobile() ? "m" : "www"
+              isMobile() ? "m" : "market"
             }.binaryx.pro/#/oneoffsale/detail/${record.order_id}`}
           >
             详情页
@@ -516,7 +505,6 @@ function App() {
   };
 
   const onSearchFormFinish = (values) => {
-    console.log(values);
     const list = allList
       .filter((item) => {
         if (values.zy === "全部职业") return true;
